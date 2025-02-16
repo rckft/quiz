@@ -6,10 +6,11 @@ import dev.rckft.authservice.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserService {
+public class UserRegistrationService {
+
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserRegistrationService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -19,13 +20,15 @@ public class UserService {
         }
 
         User user = new User();
-        user.setLogin(request.login());
+        user.setUsername(request.username());
         user.setPassword(request.password());
+
         userRepository.save(user);
     }
 
     private boolean userExists(UserRegisterRequest request) {
-        return userRepository.findByLogin(request.login()) != null;
+        return userRepository.findByUsername(request.username()).isPresent();
     }
+
 
 }

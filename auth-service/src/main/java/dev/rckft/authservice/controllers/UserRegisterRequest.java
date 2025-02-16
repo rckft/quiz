@@ -1,3 +1,3 @@
 package dev.rckft.authservice.controllers;
 
-public record UserRegisterRequest(String login, String password) { }
+public record UserRegisterRequest(String username, String password) { }
