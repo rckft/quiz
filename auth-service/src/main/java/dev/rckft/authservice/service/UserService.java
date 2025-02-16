@@ -13,11 +13,19 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public void register(UserRegisterRequest request) {
+    public void register(UserRegisterRequest request) throws Exception {
+        if (userExists(request)) {
+            throw new Exception("User already exists");
+        }
+
         User user = new User();
         user.setLogin(request.login());
         user.setPassword(request.password());
         userRepository.save(user);
+    }
+
+    private boolean userExists(UserRegisterRequest request) {
+        return userRepository.findByLogin(request.login()) != null;
     }
 
 }

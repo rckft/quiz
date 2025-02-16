@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.springframework.http.HttpStatus.*;
+
 @RestController
 @RequestMapping("/api")
 public class AuthController {
@@ -17,8 +19,11 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) {
-        userService.register(request);
-        return ResponseEntity.ok().build();
+        try {
+            userService.register(request);
+        } catch (Exception e) {
+            return ResponseEntity.status(BAD_REQUEST).build();
+        }
+        return ResponseEntity.status(CREATED).build();
     }
 }
-
