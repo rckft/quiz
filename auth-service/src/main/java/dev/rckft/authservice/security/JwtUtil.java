@@ -4,28 +4,38 @@ import io.jsonwebtoken.Jwts;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.util.Date;
 
-import static io.jsonwebtoken.SignatureAlgorithm.HS256;
+import static io.jsonwebtoken.Jwts.SIG.*;
+import static java.lang.System.*;
 import static java.util.concurrent.TimeUnit.*;
 
 
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "your_secret_key";
+    private static final SecretKeySpec SECRET_KEY = new SecretKeySpec(
+            "very_long_secret_key_at_least_32_bytes_for_HS_256_alg".getBytes(),
+            "HmacSHA256"
+    );
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + HOURS.toMillis(10)))
-                .signWith(HS256, SECRET_KEY)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date())
+                .expiration(new Date(currentTimeMillis() + HOURS.toMillis(10)))
+                .signWith(SECRET_KEY, HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
-        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getSubject();
+        return Jwts.parser()
+                .verifyWith(SECRET_KEY)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
@@ -34,6 +44,11 @@ public class JwtUtil {
     }
 
     private boolean isTokenExpired(String token) {
-        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getExpiration().before(new Date());
+        return Jwts.parser()
+                .verifyWith(SECRET_KEY)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration().before(new Date());
     }
 }
