@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Optional;
@@ -24,6 +25,9 @@ class AuthControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Test
     void shouldRegisterUser() {
         //given
@@ -40,7 +44,7 @@ class AuthControllerIntegrationTest {
 
         assertTrue(user.isPresent());
         assertEquals(TEST_USERNAME, user.get().getUsername());
-        assertEquals(TEST_PASSWORD, user.get().getPassword());
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, user.get().getPassword()));
     }
 
 }
