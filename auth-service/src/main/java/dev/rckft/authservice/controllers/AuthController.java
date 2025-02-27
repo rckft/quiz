@@ -1,8 +1,8 @@
 package dev.rckft.authservice.controllers;
 
+import dev.rckft.authservice.exception.UserAlreadyExistsException;
 import dev.rckft.authservice.security.JwtUtil;
 import dev.rckft.authservice.service.UserRegistrationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -36,24 +36,14 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) {
-        try {
-            userRegistrationService.register(request);
-        } catch (Exception e) {
-            return ResponseEntity.status(BAD_REQUEST).build();
-        }
+    public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) throws UserAlreadyExistsException {
+        userRegistrationService.register(request);
         return ResponseEntity.status(CREATED).build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) throws Exception {
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.username(), authRequest.password()));
-
-        } catch (BadCredentialsException e) {
-            throw new Exception("Incorrect username or password", e);
-        }
-
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) throws BadCredentialsException {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.username(), authRequest.password()));
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.username());
         final String jwt = jwtUtil.generateToken(userDetails);
         return ResponseEntity.ok(new AuthResponse(jwt));

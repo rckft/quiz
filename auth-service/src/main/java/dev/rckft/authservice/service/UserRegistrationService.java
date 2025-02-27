@@ -1,6 +1,7 @@
 package dev.rckft.authservice.service;
 
 import dev.rckft.authservice.controllers.UserRegisterRequest;
+import dev.rckft.authservice.exception.UserAlreadyExistsException;
 import dev.rckft.authservice.model.user.User;
 import dev.rckft.authservice.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,9 +18,9 @@ public class UserRegistrationService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public void register(UserRegisterRequest request) throws Exception {
+    public void register(UserRegisterRequest request) throws UserAlreadyExistsException {
         if (userExists(request)) {
-            throw new Exception("User already exists");
+            throw new UserAlreadyExistsException();
         }
 
         User user = new User();
