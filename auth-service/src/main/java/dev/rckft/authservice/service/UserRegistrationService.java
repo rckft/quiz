@@ -1,6 +1,6 @@
 package dev.rckft.authservice.service;
 
-import dev.rckft.authservice.controllers.UserRegisterRequest;
+import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.exception.UserAlreadyExistsException;
 import dev.rckft.authservice.model.user.User;
 import dev.rckft.authservice.repository.UserRepository;
@@ -18,7 +18,7 @@ public class UserRegistrationService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public void register(UserRegisterRequest request) throws UserAlreadyExistsException {
+    public void register(UserRegisterRequest request) {
         if (userExists(request)) {
             throw new UserAlreadyExistsException();
         }
