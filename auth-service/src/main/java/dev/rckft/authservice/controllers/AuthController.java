@@ -1,6 +1,9 @@
 package dev.rckft.authservice.controllers;
 
-import dev.rckft.authservice.exception.UserAlreadyExistsException;
+import dev.rckft.authservice.controllers.request.AuthRequest;
+import dev.rckft.authservice.controllers.request.RefreshRequest;
+import dev.rckft.authservice.controllers.request.UserRegisterRequest;
+import dev.rckft.authservice.controllers.response.AuthTokens;
 import dev.rckft.authservice.security.JwtUtil;
 import dev.rckft.authservice.service.UserRegistrationService;
 import org.springframework.http.ResponseEntity;
@@ -36,16 +39,23 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) throws UserAlreadyExistsException {
+    public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) {
         userRegistrationService.register(request);
         return ResponseEntity.status(CREATED).build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody AuthRequest authRequest) throws BadCredentialsException {
+    public ResponseEntity<AuthTokens> createAuthenticationToken(@RequestBody AuthRequest authRequest) throws BadCredentialsException {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.username(), authRequest.password()));
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.username());
-        final String jwt = jwtUtil.generateToken(userDetails);
-        return ResponseEntity.ok(new AuthResponse(jwt));
+        UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.username());
+        AuthTokens tokens = jwtUtil.generateTokens(userDetails.getUsername());
+        return ResponseEntity.ok(tokens);
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthTokens> refreshAccessToken(@RequestBody RefreshRequest refreshRequest) {
+        return ResponseEntity.ok(jwtUtil.refreshAccessToken(refreshRequest.refreshToken()));
+    }
+
+
 }
