@@ -13,7 +13,7 @@ import static org.springframework.http.HttpStatus.*;
 public class ApiExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<?> handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
+    public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
         HttpStatus status = BAD_REQUEST;
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
