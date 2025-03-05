@@ -1,5 +1,6 @@
 package dev.rckft.authservice.security;
 
+import dev.rckft.authservice.service.RevokedTokensService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 
 import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
@@ -24,7 +25,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("api/auth/**")
+                .securityMatcher("api/auth/register",
+                        "api/auth/login",
+                        "api/auth/logout")
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests.anyRequest().permitAll()
@@ -33,7 +36,19 @@ public class SecurityConfig {
                         sessionManagement.sessionCreationPolicy(STATELESS)
                 );
 
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    public SecurityFilterChain tokenRefreshFilterChain(HttpSecurity http, RevokedTokensService revokedTokensService, JwtUtil jwtUtil) throws Exception {
+        http
+                .securityMatcher("api/auth/refresh")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorizeRequests ->
+                        authorizeRequests.anyRequest().permitAll()
+                );
+
+        http.addFilterAfter(new JWTRefreshFilter(revokedTokensService, jwtUtil), LogoutFilter.class);
 
         return http.build();
     }
@@ -51,11 +66,6 @@ public class SecurityConfig {
                 );
 
         return http.build();
-    }
-
-    @Bean
-    public JWTAuthenticationFilter jwtAuthenticationFilter() {
-        return new JWTAuthenticationFilter();
     }
 
     @Bean

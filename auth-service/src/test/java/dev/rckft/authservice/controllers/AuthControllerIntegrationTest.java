@@ -1,19 +1,22 @@
 package dev.rckft.authservice.controllers;
 
 import dev.rckft.authservice.controllers.request.AuthRequest;
-import dev.rckft.authservice.controllers.request.RefreshRequest;
+import dev.rckft.authservice.controllers.request.LogoutRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
 import dev.rckft.authservice.model.user.User;
+import dev.rckft.authservice.repository.RevokedTokensRepository;
 import dev.rckft.authservice.repository.UserRepository;
 import dev.rckft.authservice.security.JwtTestUtil;
 import dev.rckft.authservice.security.JwtUtil;
+import dev.rckft.authservice.service.RevokedTokensService;
 import dev.rckft.authservice.service.UserRegistrationService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Date;
@@ -22,6 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureWebTestClient
 class AuthControllerIntegrationTest {
     private static final String EXISTING_TEST_USERNAME = "EXISTING_TEST_USERNAME";
@@ -37,10 +41,16 @@ class AuthControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RevokedTokensRepository revokedTokensRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRegistrationService userRegistrationService;
+
+    @Autowired
+    private RevokedTokensService revokedTokensService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -151,12 +161,11 @@ class AuthControllerIntegrationTest {
         //given
         String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
         String expiredAccessToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).accessToken();
-        RefreshRequest refreshRequest = new RefreshRequest(refreshToken);
 
         //when
         AuthTokens responseBody = webTestClient.post()
                 .uri("api/auth/refresh")
-                .bodyValue(refreshRequest)
+                .header("X-Refresh-Token", refreshToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(AuthTokens.class)
@@ -180,9 +189,41 @@ class AuthControllerIntegrationTest {
         assertResponseAccessTokenExpiryDate(responseAccessToken, responseRefreshToken);
     }
 
+    @Test
+    void shouldAddRefreshTokenJtiToBlacklist_whenUserLogsOut() {
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        String jti = jwtTestUtil.getClaims(refreshToken).get("jti", String.class);
+        LogoutRequest logoutRequest = new LogoutRequest(refreshToken);
+
+        //when
+        webTestClient.post()
+                .uri("api/auth/logout")
+                .bodyValue(logoutRequest)
+                .exchange()
+                .expectStatus().isOk();
+
+        Optional<String> fetchedJti = revokedTokensRepository.findByJti(jti);
+        assertTrue(fetchedJti.isPresent());
+        assertEquals(jti, fetchedJti.get());
+    }
+
+    @Test
+    void shouldNotCreateNewAccessToken_whenUserIsLoggedOut() {
+        //given
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        revokedTokensService.revokeToken(refreshToken);
+
+        //when
+        webTestClient.post()
+                .uri("api/auth/refresh")
+                .header("X-Refresh-Token", refreshToken)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
     private void assertJtiClaimSameForTokens(String accessToken, String refreshToken) {
-        String accessTokenJit = jwtTestUtil.getClaims(accessToken).get("jit", String.class);
-        String refreshTokenJit = jwtTestUtil.getClaims(refreshToken).get("jit", String.class);
+        String accessTokenJit = jwtTestUtil.getClaims(accessToken).get("jti", String.class);
+        String refreshTokenJit = jwtTestUtil.getClaims(refreshToken).get("jti", String.class);
 
         assertEquals(refreshTokenJit, accessTokenJit);
     }

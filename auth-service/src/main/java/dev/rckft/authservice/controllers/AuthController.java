@@ -1,10 +1,12 @@
 package dev.rckft.authservice.controllers;
 
 import dev.rckft.authservice.controllers.request.AuthRequest;
-import dev.rckft.authservice.controllers.request.RefreshRequest;
+import dev.rckft.authservice.controllers.request.LogoutRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
+import dev.rckft.authservice.exception.InvalidTokenException;
 import dev.rckft.authservice.security.JwtUtil;
+import dev.rckft.authservice.service.RevokedTokensService;
 import dev.rckft.authservice.service.UserRegistrationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,10 +14,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -27,15 +26,18 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
     private final UserRegistrationService userRegistrationService;
+    private final RevokedTokensService revokedTokensService;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtUtil jwtUtil,
                           UserDetailsService userDetailsService,
-                          UserRegistrationService userRegistrationService) {
+                          UserRegistrationService userRegistrationService,
+                          RevokedTokensService revokedTokensService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.userRegistrationService = userRegistrationService;
+        this.revokedTokensService = revokedTokensService;
     }
 
     @PostMapping("/register")
@@ -53,9 +55,18 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthTokens> refreshAccessToken(@RequestBody RefreshRequest refreshRequest) {
-        return ResponseEntity.ok(jwtUtil.refreshAccessToken(refreshRequest.refreshToken()));
+    public ResponseEntity<AuthTokens> refreshAccessToken(@RequestHeader("X-Refresh-Token") String refreshToken) {
+        return ResponseEntity.ok(jwtUtil.refreshAccessToken(refreshToken));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> blockRefreshToken(@RequestBody LogoutRequest logoutRequest) {
+        String refreshToken = logoutRequest.refreshToken();
+        if (jwtUtil.isTokenExpired(refreshToken)) {
+            throw new InvalidTokenException();
+        }
 
+        revokedTokensService.revokeToken(refreshToken);
+        return ResponseEntity.ok().build();
+    }
 }
