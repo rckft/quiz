@@ -18,6 +18,12 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
 
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenException(InvalidTokenException exception) {
+        HttpStatus status = UNAUTHORIZED;
+        return ResponseEntity.status(status).body(getErrorResponse(status, exception));
+    }
+
     private ErrorResponse getErrorResponse(HttpStatus status, Exception exception) {
         return new ErrorResponse(
                 status.getReasonPhrase(),
