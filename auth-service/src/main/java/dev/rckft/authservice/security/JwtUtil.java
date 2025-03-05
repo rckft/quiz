@@ -51,7 +51,7 @@ public class JwtUtil {
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
-    private String extractJti(String token) {
+    public String extractJti(String token) {
         return extractClaims(token).get(JTI, String.class);
     }
 
@@ -63,13 +63,17 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
+        return getExpiration(token).before(new Date());
+    }
+
+    public Date getExpiration(String token) {
         return Jwts.parser()
                 .verifyWith(SECRET_KEY)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
-                .getExpiration().before(new Date());
+                .getExpiration();
     }
 
     private String generateAccessToken(String userName, String jti) {
