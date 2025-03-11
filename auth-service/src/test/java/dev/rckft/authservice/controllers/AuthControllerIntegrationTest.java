@@ -67,6 +67,7 @@ class AuthControllerIntegrationTest {
     @AfterEach
     void tearDown() {
         userRepository.deleteAll();
+        revokedTokensRepository.deleteAll();
     }
 
     @Test
