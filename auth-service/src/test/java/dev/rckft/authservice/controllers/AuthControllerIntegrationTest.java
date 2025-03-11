@@ -4,6 +4,7 @@ import dev.rckft.authservice.controllers.request.AuthRequest;
 import dev.rckft.authservice.controllers.request.LogoutRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
+import dev.rckft.authservice.model.user.RevokedToken;
 import dev.rckft.authservice.model.user.User;
 import dev.rckft.authservice.repository.RevokedTokensRepository;
 import dev.rckft.authservice.repository.UserRepository;
@@ -25,7 +26,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureWebTestClient
 class AuthControllerIntegrationTest {
     private static final String EXISTING_TEST_USERNAME = "EXISTING_TEST_USERNAME";
@@ -144,7 +144,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void shouldNotLoginUser_whenUserNotExist() {
+    void shouldNotLoginUser_whenUserDoesNotExist() {
         //given
         AuthRequest authRequest = new AuthRequest(NEW_TEST_USERNAME, NEW_TEST_PASSWORD);
 
@@ -190,7 +190,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void shouldAddRefreshTokenJtiToBlacklist_whenUserLogsOut() {
+    void shouldAddRefreshTokenToRevokedTokensRepository_whenUserLogsOut() {
         String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
         String jti = jwtTestUtil.getClaims(refreshToken).get("jti", String.class);
         LogoutRequest logoutRequest = new LogoutRequest(refreshToken);
@@ -202,9 +202,9 @@ class AuthControllerIntegrationTest {
                 .exchange()
                 .expectStatus().isOk();
 
-        Optional<String> fetchedJti = revokedTokensRepository.findByJti(jti);
-        assertTrue(fetchedJti.isPresent());
-        assertEquals(jti, fetchedJti.get());
+        Optional<RevokedToken> revokedToken = revokedTokensRepository.findByJti(jti);
+        assertTrue(revokedToken.isPresent());
+        assertEquals(jti, revokedToken.get().getJti());
     }
 
     @Test
