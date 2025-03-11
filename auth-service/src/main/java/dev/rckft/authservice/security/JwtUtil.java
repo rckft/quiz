@@ -23,7 +23,7 @@ public class JwtUtil {
             "HmacSHA256"
     );
 
-    private static final long ACCESS_TOKEN_DURATION = Duration.ofMinutes(15).toMillis();
+    public static final long ACCESS_TOKEN_DURATION = Duration.ofMinutes(15).toMillis();
     private static final long REFRESH_TOKEN_DURATION = Duration.ofDays(30).toMillis();
     private static final String JTI = "jti";
 
