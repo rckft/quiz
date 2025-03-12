@@ -3,6 +3,7 @@ package dev.rckft.authservice.security;
 import dev.rckft.authservice.controllers.response.AuthTokens;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -18,10 +19,11 @@ import static java.lang.System.*;
 @Component
 public class JwtUtil {
 
-    private static final SecretKeySpec SECRET_KEY = new SecretKeySpec(
-            "very_long_secret_key_at_least_32_bytes_for_HS_256_alg".getBytes(),
-            "HmacSHA256"
-    );
+    private static SecretKeySpec SECRET_KEY;
+
+    public JwtUtil(@Value("${jwt.secret-key}") String secretKey) {
+        SECRET_KEY = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256");
+    }
 
     public static final long ACCESS_TOKEN_DURATION = Duration.ofMinutes(15).toMillis();
     private static final long REFRESH_TOKEN_DURATION = Duration.ofDays(30).toMillis();
