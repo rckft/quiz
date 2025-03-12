@@ -14,7 +14,7 @@ public class RevokedTokensScheduler {
         this.revokedTokensRepository = revokedTokensRepository;
     }
 
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "0 */15 * * * ?")
     public void deleteExpiredTokens() {
         revokedTokensRepository.deleteAllByExpiryDateBefore(Instant.now());
     }
