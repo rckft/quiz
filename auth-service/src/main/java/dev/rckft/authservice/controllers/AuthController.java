@@ -41,7 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody UserRegisterRequest request) {
+    public ResponseEntity<Void> register(@RequestBody UserRegisterRequest request) {
         userRegistrationService.register(request);
         return ResponseEntity.status(CREATED).build();
     }
@@ -60,7 +60,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> blockRefreshToken(@RequestBody LogoutRequest logoutRequest) {
+    public ResponseEntity<Void> blockRefreshToken(@RequestBody LogoutRequest logoutRequest) {
         String refreshToken = logoutRequest.refreshToken();
         if (jwtUtil.isTokenExpired(refreshToken)) {
             throw new InvalidTokenException();
