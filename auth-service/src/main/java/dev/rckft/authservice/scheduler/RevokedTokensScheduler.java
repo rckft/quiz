@@ -4,19 +4,21 @@ package dev.rckft.authservice.scheduler;
 import dev.rckft.authservice.repository.RevokedTokensRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.time.Instant;
+import java.time.Clock;
 
 public class RevokedTokensScheduler {
 
     private final RevokedTokensRepository revokedTokensRepository;
+    private final Clock clock;
 
-    public RevokedTokensScheduler(RevokedTokensRepository revokedTokensRepository) {
+    public RevokedTokensScheduler(RevokedTokensRepository revokedTokensRepository, Clock clock) {
         this.revokedTokensRepository = revokedTokensRepository;
+        this.clock = clock;
     }
 
-    @Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "${scheduler.revoked-tokens.cron}")
     public void deleteExpiredTokens() {
-        revokedTokensRepository.deleteAllByExpiryDateBefore(Instant.now());
+        revokedTokensRepository.deleteAllByExpiryDateBefore(clock.instant());
     }
 
 }
