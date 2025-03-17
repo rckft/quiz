@@ -19,10 +19,10 @@ import static java.lang.System.*;
 @Component
 public class JwtUtil {
 
-    private static SecretKeySpec SECRET_KEY;
+    private final SecretKeySpec secretKeySpec;
 
     public JwtUtil(@Value("${jwt.secret-key}") String secretKey) {
-        SECRET_KEY = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256");
+        secretKeySpec = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256");
     }
 
     public static final long ACCESS_TOKEN_DURATION = Duration.ofMinutes(15).toMillis();
@@ -59,7 +59,7 @@ public class JwtUtil {
 
     protected Claims extractClaims(String token) {
         return Jwts.parser()
-                .verifyWith(SECRET_KEY)
+                .verifyWith(secretKeySpec)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -71,7 +71,7 @@ public class JwtUtil {
 
     public Date getExpiration(String token) {
         return Jwts.parser()
-                .verifyWith(SECRET_KEY)
+                .verifyWith(secretKeySpec)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -84,7 +84,7 @@ public class JwtUtil {
                 .issuedAt(new Date())
                 .expiration(new Date(currentTimeMillis() + ACCESS_TOKEN_DURATION))
                 .claim(JTI, jti)
-                .signWith(SECRET_KEY, HS256)
+                .signWith(secretKeySpec, HS256)
                 .compact();
     }
 
@@ -94,7 +94,7 @@ public class JwtUtil {
                 .issuedAt(new Date())
                 .expiration(new Date(currentTimeMillis() + REFRESH_TOKEN_DURATION))
                 .claim(JTI, jti)
-                .signWith(SECRET_KEY, HS256)
+                .signWith(secretKeySpec, HS256)
                 .compact();
     }
 }

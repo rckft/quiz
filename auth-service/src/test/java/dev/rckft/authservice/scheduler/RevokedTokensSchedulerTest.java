@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-public class RevokedTokensSchedulerTest {
+class RevokedTokensSchedulerTest {
 
     @Autowired
     private RevokedTokensRepository revokedTokensRepository;
@@ -25,7 +25,7 @@ public class RevokedTokensSchedulerTest {
 
     @Test
     @Transactional
-    public void shouldDeleteExpiredTokens() {
+    void shouldDeleteExpiredTokens() {
         //given
         Instant now = Instant.now();
         revokedTokensRepository.saveAll(List.of(
