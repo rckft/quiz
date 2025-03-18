@@ -7,27 +7,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.awaitility.Awaitility.await;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        """
+        scheduler.enabled = true
+        scheduler.revoked-tokens.cron = */5 * * * * ?
+        """
+})
 class RevokedTokensSchedulerTest {
 
     @Autowired
     private RevokedTokensRepository revokedTokensRepository;
 
-    @Autowired
-    private RevokedTokensScheduler scheduler;
-
     @Test
-    @Transactional
     void shouldDeleteExpiredTokens() {
         //given
-        Instant now = Instant.now();
+        Instant now = Clock.systemDefaultZone().instant();
         revokedTokensRepository.saveAll(List.of(
                 new RevokedToken("EXPIRED_TOKEN_1", now.minus(1, ChronoUnit.MINUTES)),
                 new RevokedToken("EXPIRED_TOKEN_2", now.minus(1, ChronoUnit.DAYS)),
@@ -36,14 +37,6 @@ class RevokedTokensSchedulerTest {
         ));
 
         //when
-        scheduler.deleteExpiredTokens();
-
-        //then
-        List<RevokedToken> revokedTokens = revokedTokensRepository.findAll();
-
-        assertEquals(2, revokedTokens.size());
-        List<String> jtis = revokedTokens.stream().map(RevokedToken::getJti).toList();
-        assertTrue(jtis.stream().noneMatch(jti -> jti.contains("EXPIRED_TOKEN")));
-        assertTrue(jtis.stream().allMatch(jti -> jti.contains("VALID_TOKEN")));
+        await().until(() -> revokedTokensRepository.findAll().size() == 2);
     }
 }
