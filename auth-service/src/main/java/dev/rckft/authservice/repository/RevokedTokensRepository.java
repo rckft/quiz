@@ -10,5 +10,5 @@ public interface RevokedTokensRepository extends JpaRepository<RevokedToken, Str
 
     Optional<RevokedToken> findByJti(String jti);
 
-    void deleteAllByExpiryDateBefore(Instant now);
+    int deleteAllByExpiryDateBefore(Instant now);
 }

@@ -1,7 +1,6 @@
 package dev.rckft.authservice.controllers;
 
 import dev.rckft.authservice.controllers.request.AuthRequest;
-import dev.rckft.authservice.controllers.request.LogoutRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
 import dev.rckft.authservice.model.user.RevokedToken;
@@ -17,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import java.util.Date;
@@ -33,6 +31,14 @@ class AuthControllerIntegrationTest {
 
     private static final String NEW_TEST_USERNAME = "NEW_TEST_USERNAME";
     private static final String NEW_TEST_PASSWORD = "NEW_TEST_PASSWORD";
+
+    private static final String LOGIN_URI = "/api/auth/login";
+    private static final String REFRESH_URI = "api/auth/refresh";
+    private static final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
+    private static final String LOGOUT_URI = "api/auth/logout";
+    private static final String REGISTER_URI = "/api/auth/register";
+
+    private static final String JTI_CLAIM_NAME = "jti";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -77,7 +83,7 @@ class AuthControllerIntegrationTest {
 
         //when then
         webTestClient.post()
-                .uri("/api/auth/register")
+                .uri(REGISTER_URI)
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isCreated();
@@ -96,7 +102,7 @@ class AuthControllerIntegrationTest {
 
         //when then
         webTestClient.post()
-                .uri("/api/auth/register")
+                .uri(REGISTER_URI)
                 .bodyValue(request)
                 .exchange()
                 .expectStatus().isBadRequest();
@@ -106,14 +112,8 @@ class AuthControllerIntegrationTest {
 
     @Test
     void shouldReturnJwtAccessAndRefreshTokens_whenLoggedIn() {
-        //given
-        AuthRequest authRequest = new AuthRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD);
-
         //when
-        AuthTokens responseBody = webTestClient.post()
-                .uri("/api/auth/login")
-                .bodyValue(authRequest)
-                .exchange()
+        AuthTokens responseBody = postLoginRequest(new AuthRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD))
                 .expectStatus().isOk()
                 .expectBody(AuthTokens.class)
                 .returnResult()
@@ -133,27 +133,15 @@ class AuthControllerIntegrationTest {
 
     @Test
     void shouldNotLoginUser_whenPasswordIsWrong() {
-        //given
-        AuthRequest authRequest = new AuthRequest(EXISTING_TEST_USERNAME, "BAD_PASSWORD");
-
         //when then
-        webTestClient.post()
-                .uri("/api/auth/login")
-                .bodyValue(authRequest)
-                .exchange()
+        postLoginRequest(new AuthRequest(EXISTING_TEST_USERNAME, "BAD_PASSWORD"))
                 .expectStatus().isForbidden();
     }
 
     @Test
     void shouldNotLoginUser_whenUserDoesNotExist() {
-        //given
-        AuthRequest authRequest = new AuthRequest(NEW_TEST_USERNAME, NEW_TEST_PASSWORD);
-
         //when then
-        webTestClient.post()
-                .uri("/api/auth/login")
-                .bodyValue(authRequest)
-                .exchange()
+        postLoginRequest(new AuthRequest(NEW_TEST_USERNAME, NEW_TEST_PASSWORD))
                 .expectStatus().isForbidden();
     }
 
@@ -165,8 +153,8 @@ class AuthControllerIntegrationTest {
 
         //when
         AuthTokens responseBody = webTestClient.post()
-                .uri("api/auth/refresh")
-                .header("X-Refresh-Token", refreshToken)
+                .uri(REFRESH_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(AuthTokens.class)
@@ -193,38 +181,62 @@ class AuthControllerIntegrationTest {
     @Test
     void shouldAddRefreshTokenToRevokedTokensRepository_whenUserLogsOut() {
         String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
-        String jti = jwtTestUtil.getClaims(refreshToken).get("jti", String.class);
-        LogoutRequest logoutRequest = new LogoutRequest(refreshToken);
+        String jti = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
+        Date expiryDate = jwtTestUtil.getClaims(refreshToken).getExpiration();
 
         //when
         webTestClient.post()
-                .uri("api/auth/logout")
-                .bodyValue(logoutRequest)
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
                 .exchange()
                 .expectStatus().isOk();
 
-        Optional<RevokedToken> revokedToken = revokedTokensRepository.findByJti(jti);
-        assertTrue(revokedToken.isPresent());
-        assertEquals(jti, revokedToken.get().getJti());
+        Optional<RevokedToken> revokedTokenOptional = revokedTokensRepository.findByJti(jti);
+        assertTrue(revokedTokenOptional.isPresent());
+
+        RevokedToken revokedToken = revokedTokenOptional.get();
+
+        assertEquals(jti, revokedToken.getJti());
+        assertEquals(revokedToken.getExpiryDate(), expiryDate.toInstant().plusMillis(JwtUtil.ACCESS_TOKEN_DURATION));
     }
 
     @Test
     void shouldNotCreateNewAccessToken_whenUserIsLoggedOut() {
         //given
         String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
-        revokedTokensService.revokeToken(refreshToken);
-
-        //when
         webTestClient.post()
-                .uri("api/auth/refresh")
-                .header("X-Refresh-Token", refreshToken)
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange();
+
+        //when then
+        webTestClient.post()
+                .uri(REFRESH_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void shouldNotRevokeToken_whenTokenIsAlreadyRevoked() {
+        //given
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange();
+
+        //when then
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
                 .exchange()
                 .expectStatus().isUnauthorized();
     }
 
     private void assertJtiClaimSameForTokens(String accessToken, String refreshToken) {
-        String accessTokenJit = jwtTestUtil.getClaims(accessToken).get("jti", String.class);
-        String refreshTokenJit = jwtTestUtil.getClaims(refreshToken).get("jti", String.class);
+        String accessTokenJit = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        String refreshTokenJit = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
 
         assertEquals(refreshTokenJit, accessTokenJit);
     }
@@ -234,6 +246,13 @@ class AuthControllerIntegrationTest {
         Date responseAccessTokenExpiryDate = jwtTestUtil.getClaims(responseAccessToken).get("exp", Date.class);
 
         assertTrue(responseAccessTokenExpiryDate.after(expiredAccessTokenExpiryDate));
+    }
+
+    private WebTestClient.ResponseSpec postLoginRequest(AuthRequest authRequest) {
+        return webTestClient.post()
+                .uri(LOGIN_URI)
+                .bodyValue(authRequest)
+                .exchange();
     }
 
 
