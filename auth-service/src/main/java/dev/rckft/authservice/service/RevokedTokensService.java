@@ -4,7 +4,6 @@ import dev.rckft.authservice.model.user.RevokedToken;
 import dev.rckft.authservice.repository.RevokedTokensRepository;
 import dev.rckft.authservice.security.JwtUtil;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -19,7 +18,6 @@ public class RevokedTokensService {
         this.jwtUtil = jwtUtil;
     }
 
-    @Transactional
     public void revokeToken(String refreshToken) {
         Date expiration = jwtUtil.getExpiration(refreshToken);
         revokedTokensRepository.save(new RevokedToken(

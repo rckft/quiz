@@ -5,12 +5,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.Clock;
 
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    private final Clock clock;
+
+    public ApiExceptionHandler(Clock clock) {
+        this.clock = clock;
+    }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
@@ -29,7 +35,7 @@ public class ApiExceptionHandler {
                 status.getReasonPhrase(),
                 exception.getMessage(),
                 status.value(),
-                LocalDateTime.now()
+                clock.instant()
         );
     }
 

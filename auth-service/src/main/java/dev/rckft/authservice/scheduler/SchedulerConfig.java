@@ -18,9 +18,4 @@ public class SchedulerConfig {
         return new RevokedTokensScheduler(revokedTokensRepository, clock);
     }
 
-    @Bean
-    public Clock clock() {
-        return Clock.systemDefaultZone();
-    }
-
 }
