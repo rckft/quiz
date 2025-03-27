@@ -25,7 +25,7 @@ public class UserRegistrationService {
     public void register(UserRegisterRequest request) {
         String username = request.username();
         if (userExists(username)) {
-            LOGGER.debug("Unable to register user {}. User with given username already exists", username);
+            LOGGER.warn("Unable to register user {}. User with given username already exists", username);
             throw new UserAlreadyExistsException(username);
         }
 
@@ -34,11 +34,14 @@ public class UserRegistrationService {
         user.setPassword(passwordEncoder.encode(request.password()));
 
         userRepository.save(user);
-        LOGGER.info("Registered user {}.", username);
+        LOGGER.info("Registered user {}", username);
     }
 
     private boolean userExists(String username) {
-        return userRepository.findByUsername(username).isPresent();
+        LOGGER.debug("Searching for existing user with username {}", username);
+        boolean userExists = userRepository.findByUsername(username).isPresent();
+        LOGGER.debug("Existing user with username {} {}", username, userExists ? "found": "not found");
+        return userExists;
     }
 
 

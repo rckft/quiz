@@ -6,6 +6,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -13,6 +15,7 @@ import java.io.IOException;
 
 public class JWTRefreshFilter extends OncePerRequestFilter {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(JWTRefreshFilter.class);
     private final RevokedTokensService revokedTokensService;
     private final JwtUtil jwtUtil;
     private final HandlerExceptionResolver exceptionResolver;
@@ -30,10 +33,14 @@ public class JWTRefreshFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String refreshToken = request.getHeader("X-Refresh-Token");
+        String requestUri = request.getRequestURI();
+        LOGGER.debug("Received request to {}", requestUri);
         if (isTokenInvalid(refreshToken)) {
+            LOGGER.warn("Invalid refresh token for request {}", requestUri);
             exceptionResolver.resolveException(request, response, null, new InvalidTokenException());
             return;
         }
+        LOGGER.debug("Valid refresh token, proceeding with filter chain for request {}", requestUri);
         doFilter(request, response, filterChain);
     }
 
