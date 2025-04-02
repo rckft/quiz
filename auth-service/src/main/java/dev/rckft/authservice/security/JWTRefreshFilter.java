@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class JWTRefreshFilter extends OncePerRequestFilter {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(JWTRefreshFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JWTRefreshFilter.class);
     private final RevokedTokensService revokedTokensService;
     private final JwtUtil jwtUtil;
     private final HandlerExceptionResolver exceptionResolver;

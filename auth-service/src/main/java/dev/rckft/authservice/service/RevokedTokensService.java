@@ -29,8 +29,8 @@ public class RevokedTokensService {
         LOGGER.info("Revoked refresh token of user {} with jti {} and expiry date of {}", username, jti, expiryDate);
     }
 
-    public boolean isTokenRevoked(String refreshToken) {
-        String jti = jwtUtil.extractJti(refreshToken);
+    public boolean isTokenRevoked(String token) {
+        String jti = jwtUtil.extractJti(token);
         LOGGER.debug("Searching for revoked token with jti {}", jti);
         boolean isTokenRevoked = revokedTokensRepository.findByJti(jti).isPresent();
         LOGGER.debug("Revoked token with jti {} {}", jti, isTokenRevoked ? "found" : "not found");

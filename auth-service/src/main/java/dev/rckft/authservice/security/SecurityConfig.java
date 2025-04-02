@@ -1,5 +1,6 @@
 package dev.rckft.authservice.security;
 
+import dev.rckft.authservice.service.CustomUserDetailsService;
 import dev.rckft.authservice.service.RevokedTokensService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -52,6 +53,30 @@ public class SecurityConfig {
                 );
 
         http.addFilterAfter(new JWTRefreshFilter(revokedTokensService, jwtUtil, exceptionResolver), LogoutFilter.class);
+
+        return http.build();
+    }
+
+    @Bean SecurityFilterChain changePasswordFilterChain(
+            HttpSecurity http,
+            JwtUtil jwtUtil,
+            CustomUserDetailsService userDetailsService,
+            RevokedTokensService revokedTokensService,
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) throws Exception {
+        http
+                .securityMatcher("api/auth/password-change")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorizeRequests ->
+                    authorizeRequests.anyRequest().authenticated()
+                );
+
+        http.addFilterAfter(
+                new JWTAuthenticationFilter(
+                        jwtUtil,
+                        userDetailsService,
+                        revokedTokensService,
+                        exceptionResolver),
+                LogoutFilter.class);
 
         return http.build();
     }
