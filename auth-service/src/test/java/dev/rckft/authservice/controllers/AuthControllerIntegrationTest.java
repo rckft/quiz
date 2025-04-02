@@ -1,6 +1,7 @@
 package dev.rckft.authservice.controllers;
 
 import dev.rckft.authservice.controllers.request.AuthRequest;
+import dev.rckft.authservice.controllers.request.UserPasswordChangeRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
 import dev.rckft.authservice.model.user.RevokedToken;
@@ -10,7 +11,7 @@ import dev.rckft.authservice.repository.UserRepository;
 import dev.rckft.authservice.security.JwtTestUtil;
 import dev.rckft.authservice.security.JwtUtil;
 import dev.rckft.authservice.service.RevokedTokensService;
-import dev.rckft.authservice.service.UserRegistrationService;
+import dev.rckft.authservice.service.UserManagementService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -29,16 +30,19 @@ class AuthControllerIntegrationTest {
     private static final String EXISTING_TEST_USERNAME = "EXISTING_TEST_USERNAME";
     private static final String EXISTING_TEST_PASSWORD = "EXISTING_TEST_PASSWORD";
 
-    private static final String NEW_TEST_USERNAME = "NEW_TEST_USERNAME";
-    private static final String NEW_TEST_PASSWORD = "NEW_TEST_PASSWORD";
+    private static final String NEW_USER_TEST_USERNAME = "NEW_USER_TEST_USERNAME";
+    private static final String NEW_USER_TEST_PASSWORD = "NEW_USER_TEST_PASSWORD";
 
     private static final String LOGIN_URI = "/api/auth/login";
     private static final String REFRESH_URI = "api/auth/refresh";
     private static final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
+    private static final String ACCESS_TOKEN_HEADER = "Authorization";
     private static final String LOGOUT_URI = "api/auth/logout";
     private static final String REGISTER_URI = "/api/auth/register";
+    private static final String CHANGE_PASSWORD_URI = "/api/auth/password-change";
 
     private static final String JTI_CLAIM_NAME = "jti";
+    private static final String BEARER_PREFIX = "Bearer ";
 
     @Autowired
     private WebTestClient webTestClient;
@@ -53,7 +57,7 @@ class AuthControllerIntegrationTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private UserRegistrationService userRegistrationService;
+    private UserManagementService userManagementService;
 
     @Autowired
     private RevokedTokensService revokedTokensService;
@@ -67,7 +71,7 @@ class AuthControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         UserRegisterRequest request = new UserRegisterRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD);
-        userRegistrationService.register(request);
+        userManagementService.register(request);
     }
 
     @AfterEach
@@ -79,7 +83,7 @@ class AuthControllerIntegrationTest {
     @Test
     void shouldRegisterUser() {
         //given
-        UserRegisterRequest request = new UserRegisterRequest(NEW_TEST_USERNAME, NEW_TEST_PASSWORD);
+        UserRegisterRequest request = new UserRegisterRequest(NEW_USER_TEST_USERNAME, NEW_USER_TEST_PASSWORD);
 
         //when then
         webTestClient.post()
@@ -88,11 +92,11 @@ class AuthControllerIntegrationTest {
                 .exchange()
                 .expectStatus().isCreated();
 
-        Optional<User> user = userRepository.findByUsername(NEW_TEST_USERNAME);
+        Optional<User> user = userRepository.findByUsername(NEW_USER_TEST_USERNAME);
 
         assertTrue(user.isPresent());
-        assertEquals(NEW_TEST_USERNAME, user.get().getUsername());
-        assertTrue(passwordEncoder.matches(NEW_TEST_PASSWORD, user.get().getPassword()));
+        assertEquals(NEW_USER_TEST_USERNAME, user.get().getUsername());
+        assertTrue(passwordEncoder.matches(NEW_USER_TEST_PASSWORD, user.get().getPassword()));
     }
 
     @Test
@@ -141,7 +145,7 @@ class AuthControllerIntegrationTest {
     @Test
     void shouldNotLoginUser_whenUserDoesNotExist() {
         //when then
-        postLoginRequest(new AuthRequest(NEW_TEST_USERNAME, NEW_TEST_PASSWORD))
+        postLoginRequest(new AuthRequest(NEW_USER_TEST_USERNAME, NEW_USER_TEST_PASSWORD))
                 .expectStatus().isForbidden();
     }
 
@@ -234,11 +238,61 @@ class AuthControllerIntegrationTest {
                 .expectStatus().isUnauthorized();
     }
 
-    private void assertJtiClaimSameForTokens(String accessToken, String refreshToken) {
-        String accessTokenJit = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
-        String refreshTokenJit = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
+    @Test
+    void shouldChangeUserPassword_andRevokeCurrentToken_andGrantNewTokens() {
+        //given
+        AuthTokens authTokens = jwtUtil.generateTokens(EXISTING_TEST_USERNAME);
+        String accessToken = authTokens.accessToken();
+        String refreshToken = authTokens.refreshToken();
+        UserPasswordChangeRequest request =
+                new UserPasswordChangeRequest(EXISTING_TEST_PASSWORD, "NEW_TEST_PASSWORD");
 
-        assertEquals(refreshTokenJit, accessTokenJit);
+        //when
+        AuthTokens responseTokens = postChangePasswordRequest(accessToken, refreshToken, request)
+                .expectStatus().isOk()
+                .expectBody(AuthTokens.class)
+                .returnResult()
+                .getResponseBody();
+
+        //then
+        Optional<User> user = userRepository.findByUsername(EXISTING_TEST_USERNAME);
+        assertTrue(user.isPresent());
+        assertTrue(passwordEncoder.matches("NEW_TEST_PASSWORD", user.get().getPassword()));
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        assertTrue(revokedTokensRepository.findByJti(accessTokenJti).isPresent());
+
+        assertNotNull(responseTokens);
+        String responseAccessToken = responseTokens.accessToken();
+        String responseRefreshToken = responseTokens.refreshToken();
+
+        assertJtiClaimSameForTokens(responseAccessToken, responseRefreshToken);
+    }
+
+    @Test
+    void shouldNotChangeUserPassword_whenOldPasswordDoesNotMatch() {
+        //given
+        AuthTokens authTokens = jwtUtil.generateTokens(EXISTING_TEST_USERNAME);
+        String accessToken = authTokens.accessToken();
+        String refreshToken = authTokens.refreshToken();
+        UserPasswordChangeRequest request =
+                new UserPasswordChangeRequest("WRONG_OLD_PASSWORD", "NEW_TEST_PASSWORD");
+
+        //when
+        postChangePasswordRequest(accessToken, refreshToken, request).expectStatus().isBadRequest();
+
+        //then
+        Optional<User> user = userRepository.findByUsername(EXISTING_TEST_USERNAME);
+        assertTrue(user.isPresent());
+        assertTrue(passwordEncoder.matches(EXISTING_TEST_PASSWORD, user.get().getPassword()));
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        assertTrue(revokedTokensRepository.findByJti(accessTokenJti).isEmpty());
+    }
+
+    private void assertJtiClaimSameForTokens(String accessToken, String refreshToken) {
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        String refreshTokenJti = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
+
+        assertEquals(refreshTokenJti, accessTokenJti);
     }
 
     private void assertResponseAccessTokenExpiryDate(String expiredAccessToken, String responseAccessToken) {
@@ -252,6 +306,17 @@ class AuthControllerIntegrationTest {
         return webTestClient.post()
                 .uri(LOGIN_URI)
                 .bodyValue(authRequest)
+                .exchange();
+    }
+
+    private WebTestClient.ResponseSpec postChangePasswordRequest(String accessToken,
+                                                                 String refreshToken,
+                                                                 UserPasswordChangeRequest request) {
+        return webTestClient.post()
+                .uri(CHANGE_PASSWORD_URI)
+                .header(ACCESS_TOKEN_HEADER, BEARER_PREFIX + accessToken)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .bodyValue(request)
                 .exchange();
     }
 

@@ -1,11 +1,12 @@
 package dev.rckft.authservice.controllers;
 
 import dev.rckft.authservice.controllers.request.AuthRequest;
+import dev.rckft.authservice.controllers.request.UserPasswordChangeRequest;
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
 import dev.rckft.authservice.controllers.response.AuthTokens;
 import dev.rckft.authservice.security.JwtUtil;
 import dev.rckft.authservice.service.RevokedTokensService;
-import dev.rckft.authservice.service.UserRegistrationService;
+import dev.rckft.authservice.service.UserManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import static org.springframework.http.HttpStatus.*;
@@ -21,26 +23,27 @@ import static org.springframework.http.HttpStatus.*;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final UserRegistrationService userRegistrationService;
+    private final UserManagementService userManagementService;
     private final RevokedTokensService revokedTokensService;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtUtil jwtUtil,
-                          UserRegistrationService userRegistrationService,
+                          UserManagementService userManagementService,
                           RevokedTokensService revokedTokensService) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
-        this.userRegistrationService = userRegistrationService;
+        this.userManagementService = userManagementService;
         this.revokedTokensService = revokedTokensService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody UserRegisterRequest request) {
-        LOGGER.info("Received request for registering user with username {}", request.username());
-        userRegistrationService.register(request);
+        String username = request.username();
+        LOGGER.info("Received request for registering user with username {}", username);
+        userManagementService.register(request);
         return ResponseEntity.status(CREATED).build();
     }
 
@@ -67,5 +70,19 @@ public class AuthController {
         LOGGER.info("Received request for revoking refresh token");
         revokedTokensService.revokeToken(refreshToken);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/password-change")
+    public ResponseEntity<AuthTokens> changePassword(@RequestHeader("X-Refresh-Token") String refreshToken,
+                                                     @RequestBody UserPasswordChangeRequest userPasswordChangeRequest) {
+        String authenticatedUsername = SecurityContextHolder.getContext().getAuthentication().getName();
+        LOGGER.info("Received request for password change for user {}", authenticatedUsername);
+        userManagementService.changePassword(authenticatedUsername,
+                userPasswordChangeRequest.oldPassword(),
+                userPasswordChangeRequest.newPassword());
+        revokedTokensService.revokeToken(refreshToken);
+        AuthTokens tokens = jwtUtil.generateTokens(authenticatedUsername);
+        LOGGER.debug("Generated new access and refresh tokens after password change");
+        return ResponseEntity.ok(tokens);
     }
 }

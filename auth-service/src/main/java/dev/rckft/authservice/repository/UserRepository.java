@@ -2,7 +2,6 @@ package dev.rckft.authservice.repository;
 
 import dev.rckft.authservice.model.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 

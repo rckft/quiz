@@ -1,23 +1,25 @@
 package dev.rckft.authservice.service;
 
 import dev.rckft.authservice.controllers.request.UserRegisterRequest;
+import dev.rckft.authservice.exception.PasswordsDontMatchException;
 import dev.rckft.authservice.exception.UserAlreadyExistsException;
 import dev.rckft.authservice.model.user.User;
 import dev.rckft.authservice.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserRegistrationService {
+public class UserManagementService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserRegistrationService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserManagementService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserRegistrationService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserManagementService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -35,6 +37,19 @@ public class UserRegistrationService {
 
         userRepository.save(user);
         LOGGER.info("Registered user {}", username);
+    }
+
+    public void changePassword(String authenticatedUsername, String oldPassword, String newPassword) {
+        User user = userRepository.findByUsername(authenticatedUsername).orElseThrow(() -> {
+            LOGGER.warn("User with username {} not found", authenticatedUsername);
+            return new UsernameNotFoundException("User not found with username: " + authenticatedUsername);
+        });
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            LOGGER.debug("Provided old password dont match current password");
+            throw new PasswordsDontMatchException();
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        LOGGER.info("User {} password has been changed", authenticatedUsername);
     }
 
     private boolean userExists(String username) {
