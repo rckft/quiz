@@ -25,28 +25,28 @@ public class ApiExceptionHandler {
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExistsException(UserAlreadyExistsException exception) {
         HttpStatus status = BAD_REQUEST;
-        LOGGER.error(exception.getMessage());
+        LOGGER.error(exception.getMessage(), exception);
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
 
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<ErrorResponse> handleInvalidTokenException(InvalidTokenException exception) {
         HttpStatus status = UNAUTHORIZED;
-        LOGGER.error(exception.getMessage());
+        LOGGER.error(exception.getMessage(), exception);
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUsernameNotFoundException(UsernameNotFoundException exception) {
         HttpStatus status = UNAUTHORIZED;
-        LOGGER.error(exception.getMessage());
+        LOGGER.error(exception.getMessage(), exception);
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
 
     @ExceptionHandler(PasswordsDontMatchException.class)
     public ResponseEntity<ErrorResponse> handlePasswordsDontMatchException(PasswordsDontMatchException exception) {
         HttpStatus status = BAD_REQUEST;
-        LOGGER.error(exception.getMessage());
+        LOGGER.error(exception.getMessage(), exception);
         return ResponseEntity.status(status).body(getErrorResponse(status, exception));
     }
 
