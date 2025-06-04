@@ -1,0 +1,324 @@
+package dev.rckft.authservice.controllers;
+
+import dev.rckft.authservice.controllers.request.AuthRequest;
+import dev.rckft.authservice.controllers.request.UserPasswordChangeRequest;
+import dev.rckft.authservice.controllers.request.UserRegisterRequest;
+import dev.rckft.authservice.controllers.response.AuthTokens;
+import dev.rckft.authservice.model.user.RevokedToken;
+import dev.rckft.authservice.model.user.User;
+import dev.rckft.authservice.repository.RevokedTokensRepository;
+import dev.rckft.authservice.repository.UserRepository;
+import dev.rckft.authservice.security.JwtTestUtil;
+import dev.rckft.authservice.security.JwtUtil;
+import dev.rckft.authservice.service.RevokedTokensService;
+import dev.rckft.authservice.service.UserManagementService;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import java.util.Date;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
+class AuthControllerIntegrationTest {
+    private static final String EXISTING_TEST_USERNAME = "EXISTING_TEST_USERNAME";
+    private static final String EXISTING_TEST_PASSWORD = "EXISTING_TEST_PASSWORD";
+
+    private static final String NEW_USER_TEST_USERNAME = "NEW_USER_TEST_USERNAME";
+    private static final String NEW_USER_TEST_PASSWORD = "NEW_USER_TEST_PASSWORD";
+
+    private static final String LOGIN_URI = "/api/auth/login";
+    private static final String REFRESH_URI = "api/auth/refresh";
+    private static final String REFRESH_TOKEN_HEADER = "X-Refresh-Token";
+    private static final String ACCESS_TOKEN_HEADER = "Authorization";
+    private static final String LOGOUT_URI = "api/auth/logout";
+    private static final String REGISTER_URI = "/api/auth/register";
+    private static final String CHANGE_PASSWORD_URI = "/api/auth/password-change";
+
+    private static final String JTI_CLAIM_NAME = "jti";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    @Autowired
+    private WebTestClient webTestClient;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RevokedTokensRepository revokedTokensRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserManagementService userManagementService;
+
+    @Autowired
+    private RevokedTokensService revokedTokensService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private JwtTestUtil jwtTestUtil;
+
+    @BeforeEach
+    void setUp() {
+        UserRegisterRequest request = new UserRegisterRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD);
+        userManagementService.register(request);
+    }
+
+    @AfterEach
+    void tearDown() {
+        userRepository.deleteAll();
+        revokedTokensRepository.deleteAll();
+    }
+
+    @Test
+    void shouldRegisterUser() {
+        //given
+        UserRegisterRequest request = new UserRegisterRequest(NEW_USER_TEST_USERNAME, NEW_USER_TEST_PASSWORD);
+
+        //when then
+        webTestClient.post()
+                .uri(REGISTER_URI)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isCreated();
+
+        Optional<User> user = userRepository.findByUsername(NEW_USER_TEST_USERNAME);
+
+        assertTrue(user.isPresent());
+        assertEquals(NEW_USER_TEST_USERNAME, user.get().getUsername());
+        assertTrue(passwordEncoder.matches(NEW_USER_TEST_PASSWORD, user.get().getPassword()));
+    }
+
+    @Test
+    void shouldNotRegisterUser_whenUserWithGivenUsernameExists() {
+        //given
+        UserRegisterRequest request = new UserRegisterRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD);
+
+        //when then
+        webTestClient.post()
+                .uri(REGISTER_URI)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        assertEquals(1, userRepository.findAll().size());
+    }
+
+    @Test
+    void shouldReturnJwtAccessAndRefreshTokens_whenLoggedIn() {
+        //when
+        AuthTokens responseBody = postLoginRequest(new AuthRequest(EXISTING_TEST_USERNAME, EXISTING_TEST_PASSWORD))
+                .expectStatus().isOk()
+                .expectBody(AuthTokens.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(responseBody);
+
+        String accessToken = responseBody.accessToken();
+        String refreshToken = responseBody.refreshToken();
+        assertNotNull(accessToken);
+        assertNotNull(refreshToken);
+        assertEquals(EXISTING_TEST_USERNAME, jwtUtil.extractUsername(accessToken));
+        assertEquals(EXISTING_TEST_USERNAME, jwtUtil.extractUsername(refreshToken));
+
+        assertJtiClaimSameForTokens(accessToken, refreshToken);
+    }
+
+    @Test
+    void shouldNotLoginUser_whenPasswordIsWrong() {
+        //when then
+        postLoginRequest(new AuthRequest(EXISTING_TEST_USERNAME, "BAD_PASSWORD"))
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void shouldNotLoginUser_whenUserDoesNotExist() {
+        //when then
+        postLoginRequest(new AuthRequest(NEW_USER_TEST_USERNAME, NEW_USER_TEST_PASSWORD))
+                .expectStatus().isForbidden();
+    }
+
+    @Test
+    void shouldCreateNewAccessToken_whenRefreshingAccessToken() {
+        //given
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        String expiredAccessToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).accessToken();
+
+        //when
+        AuthTokens responseBody = webTestClient.post()
+                .uri(REFRESH_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AuthTokens.class)
+                .returnResult()
+                .getResponseBody();
+
+
+        assertNotNull(responseBody);
+
+        String responseAccessToken = responseBody.accessToken();
+        String responseRefreshToken = responseBody.refreshToken();
+
+        assertNotNull(responseAccessToken);
+        assertNotNull(responseRefreshToken);
+        assertEquals(EXISTING_TEST_USERNAME, jwtUtil.extractUsername(responseAccessToken));
+        assertEquals(EXISTING_TEST_USERNAME, jwtUtil.extractUsername(responseRefreshToken));
+        assertEquals(refreshToken, responseRefreshToken);
+        assertNotEquals(expiredAccessToken, responseAccessToken);
+
+        assertJtiClaimSameForTokens(responseAccessToken, responseRefreshToken);
+        assertResponseAccessTokenExpiryDate(responseAccessToken, responseRefreshToken);
+    }
+
+    @Test
+    void shouldAddRefreshTokenToRevokedTokensRepository_whenUserLogsOut() {
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        String jti = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
+        Date expiryDate = jwtTestUtil.getClaims(refreshToken).getExpiration();
+
+        //when
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange()
+                .expectStatus().isOk();
+
+        Optional<RevokedToken> revokedTokenOptional = revokedTokensRepository.findByJti(jti);
+        assertTrue(revokedTokenOptional.isPresent());
+
+        RevokedToken revokedToken = revokedTokenOptional.get();
+
+        assertEquals(jti, revokedToken.getJti());
+        assertEquals(revokedToken.getExpiryDate(), expiryDate.toInstant().plusMillis(JwtUtil.ACCESS_TOKEN_DURATION));
+    }
+
+    @Test
+    void shouldNotCreateNewAccessToken_whenUserIsLoggedOut() {
+        //given
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange();
+
+        //when then
+        webTestClient.post()
+                .uri(REFRESH_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void shouldNotRevokeToken_whenTokenIsAlreadyRevoked() {
+        //given
+        String refreshToken = jwtUtil.generateTokens(EXISTING_TEST_USERNAME).refreshToken();
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange();
+
+        //when then
+        webTestClient.post()
+                .uri(LOGOUT_URI)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void shouldChangeUserPassword_andRevokeCurrentToken_andGrantNewTokens() {
+        //given
+        AuthTokens authTokens = jwtUtil.generateTokens(EXISTING_TEST_USERNAME);
+        String accessToken = authTokens.accessToken();
+        String refreshToken = authTokens.refreshToken();
+        UserPasswordChangeRequest request =
+                new UserPasswordChangeRequest(EXISTING_TEST_PASSWORD, "NEW_TEST_PASSWORD");
+
+        //when
+        AuthTokens responseTokens = postChangePasswordRequest(accessToken, refreshToken, request)
+                .expectStatus().isOk()
+                .expectBody(AuthTokens.class)
+                .returnResult()
+                .getResponseBody();
+
+        //then
+        Optional<User> user = userRepository.findByUsername(EXISTING_TEST_USERNAME);
+        assertTrue(user.isPresent());
+        assertTrue(passwordEncoder.matches("NEW_TEST_PASSWORD", user.get().getPassword()));
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        assertTrue(revokedTokensRepository.findByJti(accessTokenJti).isPresent());
+
+        assertNotNull(responseTokens);
+        String responseAccessToken = responseTokens.accessToken();
+        String responseRefreshToken = responseTokens.refreshToken();
+
+        assertJtiClaimSameForTokens(responseAccessToken, responseRefreshToken);
+    }
+
+    @Test
+    void shouldNotChangeUserPassword_whenOldPasswordDoesNotMatch() {
+        //given
+        AuthTokens authTokens = jwtUtil.generateTokens(EXISTING_TEST_USERNAME);
+        String accessToken = authTokens.accessToken();
+        String refreshToken = authTokens.refreshToken();
+        UserPasswordChangeRequest request =
+                new UserPasswordChangeRequest("WRONG_OLD_PASSWORD", "NEW_TEST_PASSWORD");
+
+        //when
+        postChangePasswordRequest(accessToken, refreshToken, request).expectStatus().isBadRequest();
+
+        //then
+        Optional<User> user = userRepository.findByUsername(EXISTING_TEST_USERNAME);
+        assertTrue(user.isPresent());
+        assertTrue(passwordEncoder.matches(EXISTING_TEST_PASSWORD, user.get().getPassword()));
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        assertTrue(revokedTokensRepository.findByJti(accessTokenJti).isEmpty());
+    }
+
+    private void assertJtiClaimSameForTokens(String accessToken, String refreshToken) {
+        String accessTokenJti = jwtTestUtil.getClaims(accessToken).get(JTI_CLAIM_NAME, String.class);
+        String refreshTokenJti = jwtTestUtil.getClaims(refreshToken).get(JTI_CLAIM_NAME, String.class);
+
+        assertEquals(refreshTokenJti, accessTokenJti);
+    }
+
+    private void assertResponseAccessTokenExpiryDate(String expiredAccessToken, String responseAccessToken) {
+        Date expiredAccessTokenExpiryDate = jwtTestUtil.getClaims(expiredAccessToken).get("exp", Date.class);
+        Date responseAccessTokenExpiryDate = jwtTestUtil.getClaims(responseAccessToken).get("exp", Date.class);
+
+        assertTrue(responseAccessTokenExpiryDate.after(expiredAccessTokenExpiryDate));
+    }
+
+    private WebTestClient.ResponseSpec postLoginRequest(AuthRequest authRequest) {
+        return webTestClient.post()
+                .uri(LOGIN_URI)
+                .bodyValue(authRequest)
+                .exchange();
+    }
+
+    private WebTestClient.ResponseSpec postChangePasswordRequest(String accessToken,
+                                                                 String refreshToken,
+                                                                 UserPasswordChangeRequest request) {
+        return webTestClient.post()
+                .uri(CHANGE_PASSWORD_URI)
+                .header(ACCESS_TOKEN_HEADER, BEARER_PREFIX + accessToken)
+                .header(REFRESH_TOKEN_HEADER, refreshToken)
+                .bodyValue(request)
+                .exchange();
+    }
+
+
+}

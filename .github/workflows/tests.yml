@@ -16,4 +16,6 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: run tests for auth-service
+      env:
+        JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       run: mvn test -f auth-service/pom.xml -Dspring.profiles.active=test
