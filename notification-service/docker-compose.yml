@@ -1,0 +1,9 @@
+services:
+  notifications_db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: notifications_service
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5432:5432"

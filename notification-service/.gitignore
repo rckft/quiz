@@ -3,6 +3,7 @@ target/
 .mvn
 !**/src/main/**/target/
 !**/src/test/**/target/
+postgres.env
 
 ### STS ###
 .apt_generated
