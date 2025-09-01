@@ -17,6 +17,7 @@ class EmailProcessingTest {
     void resultStatusShouldBeSuccess_whenSetByStepToSuccess() {
         //given
         NotificationProcessor processor = new StepProcessingNotificationProcessor(
+                Channel.EMAIL,
                 List.of(
                         (context, resultBuilder) -> resultBuilder.success()
                 )

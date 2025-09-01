@@ -7,12 +7,15 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+import static dev.rckft.notificationservice.notification.Channel.EMAIL;
+
 @Configuration
 public class ProcessorConfiguration {
 
     @Bean
-    NotificationProcessor emailNotificationProcessor(@Qualifier("emailNotificationProcessorSteps") List<Step> emailNotificationProcessorSteps) {
-        return new StepProcessingNotificationProcessor(emailNotificationProcessorSteps);
+    NotificationProcessor emailNotificationProcessor(
+            @Qualifier("emailNotificationProcessorSteps") List<Step> emailNotificationProcessorSteps) {
+        return new StepProcessingNotificationProcessor(EMAIL, emailNotificationProcessorSteps);
     }
 
     @Bean
