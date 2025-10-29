@@ -87,6 +87,11 @@
             <version>42.7.5</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+
 
     </dependencies>
 
