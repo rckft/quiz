@@ -8,7 +8,11 @@ public class StepsConfig {
 
     @Bean
     Step alwaysSuccessStep() {
-        return (context, processingResultBuilder) -> processingResultBuilder.success();
+        return (context, processingResultBuilder) -> {
+            // TODO [TEST] tymczasowy test, naucz się testować swój kod !
+//            processingResultBuilder.success();
+            processingResultBuilder.error("something is no yes");
+        };
     }
 
 }

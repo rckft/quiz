@@ -1,8 +1,10 @@
-package dev.rckft.notificationservice.integration;
+package dev.rckft.notificationservice;
 
 import dev.rckft.notificationservice.notification.Channel;
 import dev.rckft.notificationservice.notification.dispatcher.NotificationDispatcher;
 import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
+import dev.rckft.notificationservice.notification.processor.NotificationProcessor;
+import dev.rckft.notificationservice.notification.queue.NotificationEventReceiver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -10,19 +12,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Map;
 
-import static dev.rckft.notificationservice.notification.NotificationProcessingStatus.SUCCESS;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 @SpringBootTest
-class EmailNotificationProcessorTest {
+public class NotificationProcessingTest {
+
 
     @Autowired
-    @Qualifier("notificationStrategyDispatcher")
-    NotificationDispatcher dispatcher;
+    NotificationEventReceiver receiver;
 
     @Test
-    void testEmailProcessingResult() {
-        //given
+    public void e2e_happy_path_() {
         NotificationToSendEvent event = new NotificationToSendEvent(
                 Channel.EMAIL,
                 "john.doe@test.com",
@@ -30,11 +28,9 @@ class EmailNotificationProcessorTest {
                 "test-template-id",
                 Map.of());
 
-        //when
-        dispatcher.dispatch(event);
+        receiver.receive(event);
 
-        //then
-//        assertThat(result.getStatus()).isEqualTo(SUCCESS);
     }
+
 
 }

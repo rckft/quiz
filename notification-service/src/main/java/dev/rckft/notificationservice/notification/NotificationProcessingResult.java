@@ -1,42 +1,46 @@
 package dev.rckft.notificationservice.notification;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class NotificationProcessingResult {
 
-    private final NotificationStatus status;
-    private final String error;
+    private final NotificationProcessingStatus status;
+    private final Set<NotificationProcessingError> errors;
 
     NotificationProcessingResult (Builder builder) {
         this.status = builder.status;
-        this.error = builder.error;
+        this.errors = builder.errors;
     }
 
-    public NotificationStatus getStatus() {
+    public NotificationProcessingStatus getStatus() {
         return status;
     }
 
-    public String getError() {
-        return error;
+    public Set<NotificationProcessingError> getErrors() {
+        return errors;
     }
 
     public static class Builder {
-        private static final String STATUS_EXCEPTION_MSG = "Cannot mark notification as SUCCES when current status is ";
-        private NotificationStatus status = NotificationStatus.PENDING;
-        private String error;
+        private static final String STATUS_EXCEPTION_MSG = "Cannot mark notification as SUCCESS when current status is";
+        private NotificationProcessingStatus status = NotificationProcessingStatus.PENDING;
+        private final Set<NotificationProcessingError> errors = new HashSet<>();
 
         public Builder success() {
-            if (this.status != NotificationStatus.PENDING) {
+            if (this.status != NotificationProcessingStatus.PENDING) {
                 throw new IllegalStateException(STATUS_EXCEPTION_MSG + this.status.toString());
             }
-            this.status = NotificationStatus.SUCCESS;
+            this.status = NotificationProcessingStatus.SUCCESS;
             return this;
         }
 
         public Builder error(String errorMsg) {
-            if (this.status != NotificationStatus.PENDING) {
+            //TODO - [WIP] walidacja, czy errorMsg jest null
+            if (this.status != NotificationProcessingStatus.PENDING) {
                 throw new IllegalStateException(STATUS_EXCEPTION_MSG + this.status.toString());
             }
-            this.status = NotificationStatus.ERROR;
-            this.error = errorMsg;
+            this.status = NotificationProcessingStatus.ERROR;
+            this.errors.add(new NotificationProcessingError(errorMsg));
             return this;
         }
 

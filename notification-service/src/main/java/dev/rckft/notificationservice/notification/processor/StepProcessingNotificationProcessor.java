@@ -8,7 +8,8 @@ import dev.rckft.notificationservice.notification.steps.Step;
 
 import java.util.List;
 
-class StepProcessingNotificationProcessor implements NotificationProcessor {
+// TODO [SPOTKANIE] to powinien być bean
+class StepProcessingNotificationProcessor implements NotificationProcessor, WithChannel {
 
     private final List<Step> steps;
     private final Channel channel;

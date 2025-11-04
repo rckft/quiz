@@ -2,7 +2,7 @@ package dev.rckft.notificationservice.notification.processor;
 
 import dev.rckft.notificationservice.notification.Channel;
 import dev.rckft.notificationservice.notification.NotificationProcessingResult;
-import dev.rckft.notificationservice.notification.NotificationStatus;
+import dev.rckft.notificationservice.notification.NotificationProcessingStatus;
 import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +34,6 @@ class EmailProcessingTest {
         NotificationProcessingResult result = processor.process(testEmailSubject);
 
         //then
-        assertThat(result.getStatus()).isEqualTo(NotificationStatus.SUCCESS);
+        assertThat(result.getStatus()).isEqualTo(NotificationProcessingStatus.SUCCESS);
     }
 }
