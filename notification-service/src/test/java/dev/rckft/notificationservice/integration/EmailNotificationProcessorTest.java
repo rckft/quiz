@@ -1,7 +1,7 @@
 package dev.rckft.notificationservice.integration;
 
 import dev.rckft.notificationservice.notification.Channel;
-import dev.rckft.notificationservice.notification.dispatcher.NotificationDispatcher;
+import dev.rckft.notificationservice.notification.dispatcher.NotificationDeliveryDispatcher;
 import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +10,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Map;
 
-import static dev.rckft.notificationservice.notification.NotificationProcessingStatus.SUCCESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
@@ -18,7 +17,7 @@ class EmailNotificationProcessorTest {
 
     @Autowired
     @Qualifier("notificationStrategyDispatcher")
-    NotificationDispatcher dispatcher;
+    NotificationDeliveryDispatcher dispatcher;
 
     @Test
     void testEmailProcessingResult() {

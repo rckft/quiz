@@ -35,7 +35,7 @@ public class NotificationProcessingResult {
         }
 
         public Builder error(String errorMsg) {
-            //TODO - [WIP] walidacja, czy errorMsg jest null
+            //TODO - [DEV] walidacja, czy errorMsg jest null
             if (this.status != NotificationProcessingStatus.PENDING) {
                 throw new IllegalStateException(STATUS_EXCEPTION_MSG + this.status.toString());
             }
