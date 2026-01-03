@@ -35,4 +35,15 @@ public final class DeliveryLog {
         this.errors = errors;
     }
 
+    public Long getSourceRequestId() {
+        return sourceRequestId;
+    }
+
+    public NotificationProcessingStatus getStatus() {
+        return status;
+    }
+
+    public Set<NotificationProcessingError> getErrors() {
+        return errors;
+    }
 }

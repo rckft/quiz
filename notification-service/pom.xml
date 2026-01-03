@@ -29,6 +29,9 @@
     <properties>
         <java.version>17</java.version>
         <hypersistence.version>3.11.0</hypersistence.version>
+        <testcontainers.psql.version>1.21.3</testcontainers.psql.version>
+        <testcontainers.jupiter.version>1.21.3</testcontainers.jupiter.version>
+        <testcontainers.rabbitmq.version>1.21.3</testcontainers.rabbitmq.version>
     </properties>
     <dependencies>
         <dependency>
@@ -76,6 +79,24 @@
             <groupId>io.hypersistence</groupId>
             <artifactId>hypersistence-utils-hibernate-63</artifactId>
             <version>${hypersistence.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${testcontainers.psql.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>rabbitmq</artifactId>
+            <version>${testcontainers.rabbitmq.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

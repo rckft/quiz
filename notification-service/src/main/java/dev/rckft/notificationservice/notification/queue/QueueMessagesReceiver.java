@@ -12,7 +12,7 @@ class QueueMessagesReceiver {
         this.deliveryFacade = deliveryFacade;
     }
 
-    @RabbitListener(queues = "notificationToSendQueue", concurrency = "1-3")
+    @RabbitListener(queues = "${notifications.queue}", concurrency = "1-3")
     public void receive(NotificationDeliveryRequest request){
         deliveryFacade.handle(request);
     }
