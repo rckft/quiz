@@ -1,5 +1,5 @@
 package dev.rckft.notificationservice.notification.processing;
 
-import dev.rckft.notificationservice.notification.queue.event.NotificationToDeliverEvent;
+import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
 
-record NotificationProcessingContext(NotificationToDeliverEvent event) {}
+record NotificationProcessingContext(NotificationDeliveryRequest request) {}

@@ -19,7 +19,10 @@ class NotificationDeliveryEventListener {
     @Async
     public void handle(NotificationDeliveryCompletedEvent event) {
         NotificationProcessingResult result = event.getResult();
-        repository.save(new DeliveryLog(result.getStatus(), result.getErrors()));
+        repository.save(new DeliveryLog(
+                result.getSourceRequestId(),
+                result.getStatus(),
+                result.getErrors()));
     }
 
 

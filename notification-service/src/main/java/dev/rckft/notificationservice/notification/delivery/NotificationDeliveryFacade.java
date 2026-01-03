@@ -1,9 +1,9 @@
 package dev.rckft.notificationservice.notification.delivery;
 
-import dev.rckft.notificationservice.notification.queue.event.NotificationToDeliverEvent;
+import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
 
 public interface NotificationDeliveryFacade {
 
-    void deliver(NotificationToDeliverEvent event);
+    void handle(NotificationDeliveryRequest request);
 
 }

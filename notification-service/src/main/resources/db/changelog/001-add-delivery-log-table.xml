@@ -5,9 +5,13 @@
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet author="rckft" id="001">
+        <createSequence sequenceName="delivery_log_id_seq" startValue="1" incrementBy="1"/>
         <createTable tableName="delivery_log">
-            <column name="id" type="BIGINT" autoIncrement="true">
+            <column name="id" type="BIGINT">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="delivery_log_pkey"/>
+            </column>
+            <column name="source_request_id" type="BIGINT">
+                <constraints nullable="false"/>
             </column>
             <column name="status" type="varchar(255)">
                 <constraints nullable="false"/>

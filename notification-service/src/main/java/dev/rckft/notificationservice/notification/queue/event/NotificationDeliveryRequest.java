@@ -4,7 +4,8 @@ import dev.rckft.notificationservice.notification.Channel;
 
 import java.util.Map;
 
-public record NotificationToDeliverEvent(
+public record NotificationDeliveryRequest(
+        Long id,
         Channel channel,
         String email,
         String subject,

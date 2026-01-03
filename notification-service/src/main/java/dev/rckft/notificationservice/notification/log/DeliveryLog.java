@@ -12,9 +12,14 @@ import java.util.Set;
 public final class DeliveryLog {
 
     @Id
-    @SequenceGenerator(name = "delivery_log_seq", sequenceName = "delivery_log_id_seq")
+    @SequenceGenerator(
+            name = "delivery_log_seq",
+            sequenceName = "delivery_log_id_seq",
+            allocationSize = 1
+    )
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "delivery_log_seq")
     private Long id;
+    private Long sourceRequestId;
     @Enumerated(EnumType.STRING)
     private NotificationProcessingStatus status;
     @Type(JsonType.class)
@@ -22,7 +27,10 @@ public final class DeliveryLog {
 
     protected DeliveryLog() {}
 
-    public DeliveryLog(NotificationProcessingStatus status, Set<NotificationProcessingError> errors) {
+    public DeliveryLog(Long sourceRequestId,
+                       NotificationProcessingStatus status,
+                       Set<NotificationProcessingError> errors) {
+        this.sourceRequestId = sourceRequestId;
         this.status = status;
         this.errors = errors;
     }
