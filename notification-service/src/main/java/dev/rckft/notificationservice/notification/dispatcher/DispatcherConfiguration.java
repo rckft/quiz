@@ -1,40 +1,19 @@
 package dev.rckft.notificationservice.notification.dispatcher;
 
+import dev.rckft.notificationservice.notification.Channel;
 import dev.rckft.notificationservice.notification.processing.ChannelAwareNotificationProcessor;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 
 @Configuration
-@EnableConfigurationProperties(BeanDefinitionsProperties.class)
 class DispatcherConfiguration {
 
-    private final ApplicationContext context;
-    private final BeanDefinitionsProperties beanDefinitionsProperties;
-
-    public DispatcherConfiguration(ApplicationContext context, BeanDefinitionsProperties beanDefinitionsProperties) {
-        this.context = context;
-        this.beanDefinitionsProperties = beanDefinitionsProperties;
-    }
-
     @Bean("notificationStrategyDispatcher")
-    public NotificationDeliveryDispatcher dispatcher() {
-        return new NotificationChannelDeliveryDispatcher(processors(), defaultProcessor());
-    }
-
-    private Set<ChannelAwareNotificationProcessor> processors() {
-        return beanDefinitionsProperties.processorsBeans().stream()
-                .map(name -> context.getBean(name, ChannelAwareNotificationProcessor.class))
-                .collect(Collectors.toSet());
-    }
-
-    private ChannelAwareNotificationProcessor defaultProcessor() {
-        return context.getBean(beanDefinitionsProperties.defaultProcessorBean(), ChannelAwareNotificationProcessor.class);
+    public NotificationDeliveryDispatcher dispatcher(Map<Channel, ChannelAwareNotificationProcessor> processors) {
+        return new NotificationChannelDeliveryDispatcher(processors);
     }
 
 }
