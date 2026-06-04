@@ -2,24 +2,23 @@ package dev.rckft.notificationservice.notification.delivery;
 
 import dev.rckft.notificationservice.notification.NotificationProcessingResult;
 import dev.rckft.notificationservice.notification.dispatcher.NotificationDeliveryDispatcher;
-import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
-import dev.rckft.notificationservice.notification.log.NotificationProcessingEventPublisher;
+import dev.rckft.notificationservice.notification.queue.event.NotificationToDeliverEvent;
 
 
 class DefaultNotificationDeliveryCoordinator implements NotificationDeliveryFacade {
 
     private final NotificationDeliveryDispatcher dispatcher;
-    private final NotificationProcessingEventPublisher publisher;
+    private final NotificationDeliveryEventPublisher publisher;
 
     public DefaultNotificationDeliveryCoordinator(
             NotificationDeliveryDispatcher dispatcher,
-            NotificationProcessingEventPublisher publisher) {
+            NotificationDeliveryEventPublisher publisher) {
         this.dispatcher = dispatcher;
         this.publisher = publisher;
     }
 
     @Override
-    public void deliver(NotificationToSendEvent event) {
+    public void deliver(NotificationToDeliverEvent event) {
         NotificationProcessingResult result = dispatcher.dispatch(event);
         publisher.publishProcessingFinishedEvent(result);
     }

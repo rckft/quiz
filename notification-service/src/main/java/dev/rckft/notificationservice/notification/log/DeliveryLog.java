@@ -8,14 +8,12 @@ import org.hibernate.annotations.Type;
 
 import java.util.Set;
 
-// TODO - [DEV] jakie pola jeszcze w tej klasie ?
-// TODO - id eventu notyfikacji, coś co pozwoli połączyć delivery log z eventem/notyfikacją
-
 @Entity
 public final class DeliveryLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "delivery_log_seq", sequenceName = "delivery_log_id_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "delivery_log_seq")
     private Long id;
     @Enumerated(EnumType.STRING)
     private NotificationProcessingStatus status;

@@ -5,7 +5,7 @@
                    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet author="rckft" id="001">
-        <createTable tableName="deliverylog">
+        <createTable tableName="delivery_log">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="delivery_log_pkey"/>
             </column>
