@@ -1,7 +1,7 @@
 package dev.rckft.notificationservice.notification.dispatcher;
 
-import dev.rckft.notificationservice.notification.processor.ChannelAwareNotificationProcessor;
-import dev.rckft.notificationservice.notification.processor.BeanDefinitionsProperties;
+import dev.rckft.notificationservice.notification.processing.ChannelAwareNotificationProcessor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 
 
 @Configuration
-public class DispatcherConfiguration {
+@EnableConfigurationProperties(BeanDefinitionsProperties.class)
+class DispatcherConfiguration {
 
     private final ApplicationContext context;
     private final BeanDefinitionsProperties beanDefinitionsProperties;

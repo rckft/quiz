@@ -1,0 +1,20 @@
+package dev.rckft.notificationservice.notification.queue;
+
+import dev.rckft.notificationservice.notification.delivery.NotificationDeliveryFacade;
+import dev.rckft.notificationservice.notification.queue.event.NotificationToDeliverEvent;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+
+class QueueMessagesReceiver {
+
+    private final NotificationDeliveryFacade deliveryFacade;
+
+    public QueueMessagesReceiver(NotificationDeliveryFacade deliveryFacade) {
+        this.deliveryFacade = deliveryFacade;
+    }
+
+    @RabbitListener(queues = "notificationToSendQueue", concurrency = "1-3")
+    public void receive(NotificationToDeliverEvent event){
+        deliveryFacade.deliver(event);
+    }
+
+}
