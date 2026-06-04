@@ -1,10 +1,8 @@
-package dev.rckft.notificationservice.notification.processor;
+package dev.rckft.notificationservice.notification.processing;
 
 import dev.rckft.notificationservice.notification.Channel;
-import dev.rckft.notificationservice.notification.NotificationContext;
 import dev.rckft.notificationservice.notification.NotificationProcessingResult;
-import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
-import dev.rckft.notificationservice.notification.steps.ProcessingStep;
+import dev.rckft.notificationservice.notification.queue.event.NotificationToDeliverEvent;
 
 import java.util.List;
 
@@ -19,8 +17,8 @@ class StepProcessingNotificationProcessor implements ChannelAwareNotificationPro
     }
 
     @Override
-    public NotificationProcessingResult process(NotificationToSendEvent event) {
-        NotificationContext context = new NotificationContext(event);
+    public NotificationProcessingResult process(NotificationToDeliverEvent event) {
+        NotificationProcessingContext context = new NotificationProcessingContext(event);
         NotificationProcessingResult.Builder processingResultBuilder = new NotificationProcessingResult.Builder();
         processingSteps.forEach(step -> step.execute(context, processingResultBuilder));
         return processingResultBuilder.build();

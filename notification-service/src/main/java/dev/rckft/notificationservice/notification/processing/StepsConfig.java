@@ -1,15 +1,14 @@
-package dev.rckft.notificationservice.notification.steps;
+package dev.rckft.notificationservice.notification.processing;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class StepsConfig {
+class StepsConfig {
 
     @Bean
     ProcessingStep alwaysSuccessStep() {
         return (context, processingResultBuilder) -> {
-            // TODO [TEST] tymczasowy test, naucz się testować swój kod !
             processingResultBuilder.success();
         };
     }
