@@ -1,7 +1,7 @@
 package dev.rckft.notificationservice.notification.dispatcher;
 
 import dev.rckft.notificationservice.notification.Channel;
-import dev.rckft.notificationservice.notification.NotificationProcessingResult;
+import dev.rckft.notificationservice.notification.processing.NotificationProcessingResult;
 import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
 import dev.rckft.notificationservice.notification.processing.ChannelAwareNotificationProcessor;
 
@@ -19,7 +19,7 @@ class NotificationChannelDeliveryDispatcher implements NotificationDeliveryDispa
     }
 
     @Override
-    public NotificationProcessingResult dispatch(NotificationDeliveryRequest request) {
+    public NotificationProcessingResult.Builder dispatch(NotificationDeliveryRequest request) {
         Channel channel = Objects.requireNonNullElse(request.channel(), DEFAULT);
         ChannelAwareNotificationProcessor processor = processors.get(channel);
         return processor.process(request);
