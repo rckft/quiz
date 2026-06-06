@@ -1,6 +1,8 @@
 package dev.rckft.notificationservice.notification.processing;
 
 import dev.rckft.notificationservice.notification.Channel;
+import dev.rckft.notificationservice.notification.NotificationEventPublisher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -34,13 +36,22 @@ class ProcessingConfig {
     }
 
     @Bean
-    ChannelAwareNotificationProcessor emailNotificationProcessor(List<ProcessingStep> emailNotificationProcessorSteps) {
+    ChannelAwareNotificationProcessor emailNotificationProcessor(
+            List<ProcessingStep> emailNotificationProcessorSteps
+    ) {
         return new StepProcessingNotificationProcessor(EMAIL, emailNotificationProcessorSteps);
     }
 
     @Bean
     ChannelAwareNotificationProcessor smsNotificationProcessor() {
         return new StepProcessingNotificationProcessor(SMS, List.of());
+    }
+
+    @Bean
+    List<ProcessingStep> emailNotificationProcessorSteps(@Qualifier("sendEmailStep") ProcessingStep sendEmailStep) {
+        return List.of(
+                sendEmailStep
+        );
     }
 
 
