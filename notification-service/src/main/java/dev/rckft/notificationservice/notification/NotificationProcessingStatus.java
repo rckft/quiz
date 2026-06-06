@@ -1,6 +1,6 @@
 package dev.rckft.notificationservice.notification;
 
-public enum NotificationStatus {
+public enum NotificationProcessingStatus {
     PENDING,
     SUCCESS,
     ERROR

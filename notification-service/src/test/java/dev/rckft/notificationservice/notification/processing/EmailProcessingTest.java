@@ -1,9 +1,9 @@
-package dev.rckft.notificationservice.notification.processor;
+package dev.rckft.notificationservice.notification.processing;
 
 import dev.rckft.notificationservice.notification.Channel;
 import dev.rckft.notificationservice.notification.NotificationProcessingResult;
-import dev.rckft.notificationservice.notification.NotificationStatus;
-import dev.rckft.notificationservice.notification.event.NotificationToSendEvent;
+import dev.rckft.notificationservice.notification.NotificationProcessingStatus;
+import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,12 +17,14 @@ class EmailProcessingTest {
     void resultStatusShouldBeSuccess_whenSetByStepToSuccess() {
         //given
         NotificationProcessor processor = new StepProcessingNotificationProcessor(
+                Channel.EMAIL,
                 List.of(
                         (context, resultBuilder) -> resultBuilder.success()
                 )
         );
 
-        NotificationToSendEvent testEmailSubject = new NotificationToSendEvent(
+        NotificationDeliveryRequest testEmailSubject = new NotificationDeliveryRequest(
+                1L,
                 Channel.EMAIL,
                 "john.doe@test.com",
                 "Test email subject",
@@ -33,6 +35,6 @@ class EmailProcessingTest {
         NotificationProcessingResult result = processor.process(testEmailSubject);
 
         //then
-        assertThat(result.getStatus()).isEqualTo(NotificationStatus.SUCCESS);
+        assertThat(result.getStatus()).isEqualTo(NotificationProcessingStatus.SUCCESS);
     }
 }
