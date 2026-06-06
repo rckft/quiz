@@ -60,7 +60,8 @@ class NotificationDeliveryIntegrationTest {
         NotificationDeliveryRequest request = new NotificationDeliveryRequest(
                 requestId,
                 Channel.EMAIL,
-                "test@email.com",
+                new EmailAddress("sender@test.com", "Sender"),
+                new EmailAddress("test@email.com", "Receiver"),
                 "test subject",
                 "test template id",
                 Map.of()
