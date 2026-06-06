@@ -1,7 +1,7 @@
 package dev.rckft.notificationservice.notification.delivery;
 
 import dev.rckft.notificationservice.notification.NotificationEventPublisher;
-import dev.rckft.notificationservice.notification.NotificationProcessingResult;
+import dev.rckft.notificationservice.notification.processing.NotificationProcessingResult;
 import dev.rckft.notificationservice.notification.dispatcher.NotificationDeliveryDispatcher;
 import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class DefaultNotificationDeliveryCoordinatorTest {
     @Test
     void deliver_process_should_call_call_dispatcher_and_publisher() {
         // given
-        NotificationProcessingResult result = mock(NotificationProcessingResult.class);
+        NotificationProcessingResult.Builder result = mock(NotificationProcessingResult.Builder.class);
         NotificationDeliveryRequest request = mock(NotificationDeliveryRequest.class);
         when(dispatcher.dispatch(any(NotificationDeliveryRequest.class))).thenReturn(result);
 
@@ -28,7 +28,7 @@ class DefaultNotificationDeliveryCoordinatorTest {
 
         // then
         Mockito.verify(dispatcher).dispatch(request);
-        Mockito.verify(publisher).publishDeliveryCompletedEvent(result);
+        Mockito.verify(publisher).publishDeliveryCompletedEvent(result.build());
     }
 
 
