@@ -1,5 +1,6 @@
 package dev.rckft.notificationservice.notification.delivery;
 
+import dev.rckft.notificationservice.notification.NotificationEventPublisher;
 import dev.rckft.notificationservice.notification.dispatcher.NotificationDeliveryDispatcher;
 import dev.rckft.notificationservice.notification.log.DeliveryLogRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -13,7 +14,7 @@ class NotificationDeliveryConfig {
     @Bean
     NotificationDeliveryFacade defaultNotificationDeliveryCoordinator(
             NotificationDeliveryDispatcher dispatcher,
-            NotificationDeliveryEventPublisher publisher) {
+            NotificationEventPublisher publisher) {
         return new DefaultNotificationDeliveryCoordinator(dispatcher, publisher);
     }
 
@@ -23,8 +24,8 @@ class NotificationDeliveryConfig {
     }
 
     @Bean
-    NotificationDeliveryEventPublisher notificationDeliveryEventPublisher(ApplicationEventPublisher delegateEventPublisher) {
-        return new NotificationDeliveryEventPublisher(delegateEventPublisher);
+    NotificationEventPublisher notificationDeliveryEventPublisher(ApplicationEventPublisher delegateEventPublisher) {
+        return new NotificationEventPublisher(delegateEventPublisher);
     }
 
 

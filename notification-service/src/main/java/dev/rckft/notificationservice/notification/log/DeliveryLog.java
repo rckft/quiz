@@ -1,7 +1,7 @@
 package dev.rckft.notificationservice.notification.log;
 
 import dev.rckft.notificationservice.notification.NotificationProcessingError;
-import dev.rckft.notificationservice.notification.NotificationProcessingStatus;
+import dev.rckft.notificationservice.notification.delivery.NotificationDeliveryStatus;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Type;
@@ -21,14 +21,14 @@ public final class DeliveryLog {
     private Long id;
     private Long sourceRequestId;
     @Enumerated(EnumType.STRING)
-    private NotificationProcessingStatus status;
+    private NotificationDeliveryStatus status;
     @Type(JsonType.class)
     private Set<NotificationProcessingError> errors;
 
     protected DeliveryLog() {}
 
     public DeliveryLog(Long sourceRequestId,
-                       NotificationProcessingStatus status,
+                       NotificationDeliveryStatus status,
                        Set<NotificationProcessingError> errors) {
         this.sourceRequestId = sourceRequestId;
         this.status = status;
@@ -39,7 +39,7 @@ public final class DeliveryLog {
         return sourceRequestId;
     }
 
-    public NotificationProcessingStatus getStatus() {
+    public NotificationDeliveryStatus getStatus() {
         return status;
     }
 

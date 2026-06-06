@@ -1,5 +1,6 @@
 package dev.rckft.notificationservice.notification.delivery;
 
+import dev.rckft.notificationservice.notification.NotificationEventPublisher;
 import dev.rckft.notificationservice.notification.NotificationProcessingResult;
 import dev.rckft.notificationservice.notification.dispatcher.NotificationDeliveryDispatcher;
 import dev.rckft.notificationservice.notification.queue.event.NotificationDeliveryRequest;
@@ -12,7 +13,7 @@ import static org.mockito.Mockito.*;
 class DefaultNotificationDeliveryCoordinatorTest {
 
     private final NotificationDeliveryDispatcher dispatcher = mock(NotificationDeliveryDispatcher.class);
-    private final NotificationDeliveryEventPublisher publisher = mock(NotificationDeliveryEventPublisher.class);
+    private final NotificationEventPublisher publisher = mock(NotificationEventPublisher.class);
     private final NotificationDeliveryFacade coordinator = new DefaultNotificationDeliveryCoordinator(dispatcher, publisher);
 
     @Test
@@ -27,7 +28,7 @@ class DefaultNotificationDeliveryCoordinatorTest {
 
         // then
         Mockito.verify(dispatcher).dispatch(request);
-        Mockito.verify(publisher).publishProcessingFinishedEvent(result);
+        Mockito.verify(publisher).publishDeliveryCompletedEvent(result);
     }
 
 
