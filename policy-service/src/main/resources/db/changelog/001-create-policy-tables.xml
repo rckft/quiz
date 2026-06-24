@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="rckft" id="001">
+        <createSequence sequenceName="policy_holder_id_seq" startValue="1" incrementBy="1"/>
+        <createTable tableName="policy_holder">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="policy_holder_pkey"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="street" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="building_no" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="post_code" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet author="rckft" id="002">
+        <createSequence sequenceName="policy_id_seq" startValue="1" incrementBy="1"/>
+        <createTable tableName="policy">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="policy_pkey"/>
+            </column>
+            <column name="policy_holder_entity_id" type="BIGINT">
+                <constraints nullable="false" unique="true"
+                             foreignKeyName="policy_policy_holder_fkey"
+                             references="policy_holder(id)"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,9 @@
+services:
+  policy_db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: policy_db
+      POSTGRES_USER: policy_service
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5433:5432"
