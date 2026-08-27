@@ -1,16 +1,13 @@
-package dev.rckft.authservice;
+package dev.rckft.policyservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @SpringBootTest
-class AuthServiceApplicationTests {
+class PolicyServiceApplicationTests {
 
     @Test
     void contextLoads() {
-        assertTrue(true);
     }
 
 }
